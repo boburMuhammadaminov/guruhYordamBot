@@ -74,7 +74,7 @@ class BotController extends Controller
                 if (!$check->send_by_channel){
                     if (isset($message->sender_chat)){
                         $this->deleteMessage($chat_id, $message_id);
-                        $txt = "[{$message->sender_chat->title}](https://t.me/{$message->sender_chat->username}) *\niltimos, shaxsiy akkauntingizdan xabar yozing*";
+                        $txt = "[{$message->sender_chat->title}](https://t.me/{$message->sender_chat->username}) *iltimos, shaxsiy akkauntingizdan xabar yozing*";
                         $this->sendMessage($chat_id, $txt, [
                             'parse_mode' => 'markdown',
                         ]);
@@ -128,6 +128,18 @@ class BotController extends Controller
                     }
                 }
                 if($this->isGroupAdmin($chat_id, $from_id)){
+                    if ($text == "/offchannel"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->updateGroup($chat_id, ['send_by_channel' => false]);
+                        $txt = "*Guruhda kanal nomi orqali yozishni taqiqlandi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
+                    if ($text == "/onchannel"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->updateGroup($chat_id, ['send_by_channel' => true]);
+                        $txt = "*Guruhda kanal nomi orqali yozishga ruxsat berildi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
                     if ($text == "/unsetchannel"){
                         $this->deleteMessage($chat_id, $message_id);
                         $channel = Group::where('group_id', $chat_id)->get()->first()->channel;
