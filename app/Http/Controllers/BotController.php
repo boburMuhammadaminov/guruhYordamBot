@@ -84,24 +84,26 @@ class BotController extends Controller
                 }
                 if (!empty($check->channel)){
                     $channel = $this->bot('getChat', ['chat_id' => $check->channel]);
-                    if (!$channel->ok){
-                        $check = $this->bot('getChatMember', [
-                            'chat_id' => $channel->result->id,
-                            'user_id' => $from_id,
-                        ]);
-                        if ($check->result->status == 'left'){
-                            $this->deleteMessage($chat_id, $message_id);
-                            $txt = "*Salom* [{$fname}](tg://user?id=$from_id) *\nKanalga A'zo bo'ling bo'lmasangiz guruhimizga yoza olmaysiz*";
-                            $btn = json_encode([
-                                'inline_keyboard'=>[
-                                    [['text' => "📡Kanalimiz" , 'url' =>"https://t.me/{$channel->result->username}"]],
-                                ]
+                    if ($channel->ok){
+                        if (!isset($message->sender_chat)){
+                            $check = $this->bot('getChatMember', [
+                                'chat_id' => $channel->result->id,
+                                'user_id' => $from_id,
                             ]);
-                            $this->sendMessage($chat_id, $txt, [
-                                'parse_mode' => 'markdown',
-                                'reply_markup' => $btn
-                            ]);
-                            exit();
+                            if ($check->result->status == 'left'){
+                                $this->deleteMessage($chat_id, $message_id);
+                                $txt = "*Salom* [{$fname}](tg://user?id=$from_id) *\nKanalga A'zo bo'ling bo'lmasangiz guruhimizga yoza olmaysiz*";
+                                $btn = json_encode([
+                                    'inline_keyboard'=>[
+                                        [['text' => "📡Kanalimiz" , 'url' =>"https://t.me/{$channel->result->username}"]],
+                                    ]
+                                ]);
+                                $this->sendMessage($chat_id, $txt, [
+                                    'parse_mode' => 'markdown',
+                                    'reply_markup' => $btn
+                                ]);
+                                exit();
+                            }
                         }
                     }else{
                         $check = $this->bot('getChatAdministrators', ['chat_id' => $chat_id]);
