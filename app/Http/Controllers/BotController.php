@@ -59,7 +59,7 @@ class BotController extends Controller
         if (isset($update->message)){
             $message = $update->message;
             $message_id = $message->message_id;
-            $text = $message->text;
+            isset($message->text) ? $text = $message->text : $text = null;
             $chat = $message->chat;
             $chat_id = $chat->id;
             isset($chat->title) ? $chat_title = $chat->title : $chat_title = null;
@@ -71,6 +71,8 @@ class BotController extends Controller
 
             if ($chat_type == 'supergroup'){
                 $check = $this->getGroup($chat_id);
+//                $this->json($check->add_required_member);
+                $n = $check->add_required_member;
                 if (!$check->send_by_channel){
                     if (isset($message->sender_chat)){
                         $this->deleteMessage($chat_id, $message_id);
@@ -114,6 +116,13 @@ class BotController extends Controller
                             }
                         }
 
+                    }
+                }
+                if ($n > 0){
+                    if(!$this->isGroupAdmin($chat_id, $from_id)){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $txt = "<b><a href='tg://user?{$from_id}'>{$fname}</a> guruhda yozish uchun {$n} ta odam qoshishingiz kerakk</b>";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
                     }
                 }
                 if ($text == '/channel'){
@@ -198,6 +207,20 @@ class BotController extends Controller
                             }
                         }
                     }
+                    if(mb_stripos($text,"/addmember") !== false) {
+                        $ex = explode(" ", $text);
+                        if (count($ex) == 2) {
+                            $ex = $ex[1];
+                            $this->deleteMessage($chat_id, $message_id);
+                            if (is_numeric($ex)){
+                                $this->updateGroup($chat_id, ['add_required_member' => $ex]);
+                                $txt = "*Guruhda yozish uchun majburiy odam qo'shishni {$ex} ga o'zgartirildi!*";
+                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                            }else{
+                                $this->sendMessage($chat_id, "Raqam yuboring!");
+                            }
+                        }
+                    }
 
                 }
             }
@@ -211,7 +234,12 @@ class BotController extends Controller
     }
     public function getGroup($group_id)
     {
-        return Group::where('group_id', $group_id)->first();
+        $group = Group::where('group_id', $group_id)->first();
+        if ($group) {
+            return $group;
+        }else{
+            return Group::create(['group_id' => $group_id]);
+        }
     }
     public function isGroupAdmin($chat_id, $user_id)
     {
