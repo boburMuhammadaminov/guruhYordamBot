@@ -73,9 +73,11 @@ class BotController extends Controller
 
             if ($chat_type == 'supergroup'){
                 $check = $this->getGroup($chat_id);
+                $group = $check;
                 $n = $check->add_required_member;
                 if (!$check->send_by_channel){
                     if (isset($message->sender_chat)){
+                        $this->sendChatAction($chat_id);
                         $this->deleteMessage($chat_id, $message_id);
                         $txt = "[{$message->sender_chat->title}](https://t.me/{$message->sender_chat->username}) *iltimos, shaxsiy akkauntingizdan xabar yozing*";
                         $this->sendMessage($chat_id, $txt, [
@@ -94,6 +96,7 @@ class BotController extends Controller
                                 'user_id' => $from_id,
                             ]);
                             if ($check->result->status == 'left'){
+                                $this->sendChatAction($chat_id);
                                 $this->deleteMessage($chat_id, $message_id);
                                 $txt = "*Salom* [{$fname}](tg://user?id=$from_id) *\nKanalga A'zo bo'ling bo'lmasangiz guruhimizga yoza olmaysiz*";
                                 $btn = json_encode([
@@ -124,6 +127,7 @@ class BotController extends Controller
                         if(!$this->isGroupAdmin($chat_id, $from_id)){
                             $count = GroupMember::where('group_id', $chat_id)->where('user_id', $from_id)->get()->count();
                             if ($n != $count){
+                                $this->sendChatAction($chat_id);
                                 $count = $n - $count;
                                 $this->deleteMessage($chat_id, $message_id);
                                 $txt = "<b><a href='tg://user?{$from_id}'>{$fname}</a> guruhda yozish uchun {$count}/{$n} ta odam qoshishingiz kerak</b>";
@@ -134,6 +138,7 @@ class BotController extends Controller
                     }
                 }
                 if ($text == '/channel'){
+                    $this->sendChatAction($chat_id);
                     $channel = Group::where('group_id', $chat_id)->get()->first()->channel;
                     if (empty($channel)){
                         $txt = "*Guruhga kanal bog'lanmagan. Agar kanalga obuna bo'lmasa, guruhga yoza olmaydigan qilish:* `/setchannel @username`";
@@ -145,18 +150,21 @@ class BotController extends Controller
                     }
                 }
                 if ($text == "/id"){
+                    $this->sendChatAction($chat_id);
                     $this->sendMessage($chat_id, "*Sizning id raqamingiz: *`{$from_id}`", [
                        'parse_mode' => 'markdown',
                        'reply_to_message_id' => $message_id,
                     ]);
                 }
                 if ($text == "/gid"){
+                    $this->sendChatAction($chat_id);
                     $this->sendMessage($chat_id, "*Guruhning id raqami: *`{$chat_id}`", [
                        'parse_mode' => 'markdown',
                        'reply_to_message_id' => $message_id,
                     ]);
                 }
                 if ($text == "/mymembers"){
+                    $this->sendChatAction($chat_id);
                     $count = GroupMember::where('group_id', $chat_id)->where('user_id', $from_id)->get()->count();
                     $txt = "<b>Siz guruhga {$count} ta odam qoshigansiz</b>";
                     $this->sendMessage($chat_id, $txt, [
@@ -167,6 +175,7 @@ class BotController extends Controller
                 if (isset($message->from) and isset($message->new_chat_participant) and isset($message->new_chat_member) and isset($message->new_chat_members)){
                     $this->deleteMessage($chat_id, $message_id);
                     if (!$message->new_chat_participant->is_bot){
+                        $this->sendChatAction($chat_id);
                         $check = GroupMember::where('group_id', $chat_id)->where('added_user', $message->new_chat_participant->id)->first();
                         if (!$check){
                             $check = GroupMember::create([
@@ -188,6 +197,7 @@ class BotController extends Controller
                 if (isset($message->from) and isset($message->left_chat_participant) and isset($message->left_chat_member)){
                     $this->deleteMessage($chat_id, $message_id);
                     if (!$message->left_chat_participant->is_bot){
+                        $this->sendChatAction($chat_id);
                         $check = GroupMember::where('group_id', $chat_id)->where('added_user', $message->left_chat_participant->id)->first();
                         if($check){
                             $check->delete();
@@ -206,18 +216,21 @@ class BotController extends Controller
                 if($this->isGroupAdmin($chat_id, $from_id)){
                     if ($text == "/offchannel"){
                         $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
                         $this->updateGroup($chat_id, ['send_by_channel' => false]);
                         $txt = "*Guruhda kanal nomi orqali yozishni taqiqlandi!*";
                         $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
                     }
                     if ($text == "/onchannel"){
                         $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
                         $this->updateGroup($chat_id, ['send_by_channel' => true]);
                         $txt = "*Guruhda kanal nomi orqali yozishga ruxsat berildi!*";
                         $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
                     }
                     if ($text == "/unsetchannel"){
                         $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
                         $channel = Group::where('group_id', $chat_id)->get()->first()->channel;
                         if (empty($channel)){
                             $txt = "*Guruhga kanal bog'lanmagan. Agar kanalga obuna bo'lmasa, guruhga yoza olmaydigan qilish:* `/setchannel @username`";
@@ -234,15 +247,52 @@ class BotController extends Controller
                         $rfrom = $reply_to_message->from;
                         $rchat = $reply_to_message->chat;
                         if ($text == "/warn"){
-                            $count = GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->get()->count();
-//                            $this->json($count);
+                            $this->sendChatAction($chat_id);
+                            $warning = GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->get()->first();
+                            if (empty($warning)){
+                                $warning = GroupWarning::create([
+                                    'group_id' => $chat_id,
+                                    'user_id' => $rfrom->id,
+                                    'amount' => 1
+                                ]);
+                                $txt = "<b><a href='tg://user?id={$rfrom->id}'>{$rfrom->first_name}</a> ogohlantirish oldi</b>\nEndi undagi ogohlantirishlar soni <b>{$warning->amount}</b>/{$group->warning}";
+                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                            }else{
+                                if ($group->warning == $warning->amount + 1){
+                                    $time = strtotime("+10800000 minutes");
+                                    $this->bot('kickChatMember', [
+                                        'chat_id' => $chat_id,
+                                        'user_id' => $rfrom->id,
+                                        'until_date' => $time,
+                                    ]);
+                                    $txt = "<a href='tg://user?id={$rfrom->id}'>{$rfrom->first_name}</a> shu vaqtgacha unga berilgan ogohlantirishlarga <b>befarq bo'ldi</b>, jazo sifatida esa guruhdan <b>chiqarib yuborildi.</b>";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                    GroupWarning::find($warning->id)->delete();
+                                }else{
+                                    GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->increment('amount');
+                                    $amount = $warning->amount + 1;
+                                    $txt = "<b><a href='tg://user?id={$rfrom->id}'>{$rfrom->first_name}</a> ogohlantirish oldi</b>\nEndi undagi ogohlantirishlar soni <b>{$amount}</b>/{$group->warning}";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                }
+                            }
                         }
+                        if ($text == "/unwarn"){
+                            $this->sendChatAction($chat_id);
+                            $warning = GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->get()->first();
+                            if (!empty($warning)){
+                                GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->delete();
+                            }
+                            $txt = "<a href='tg://user?id={$rfrom->id}'>{$rfrom->first_name}</a> dan barcha <b>ogohlantirishlar</b> olib tashlandi.\nEndi undagi ogohlantirishlar soni <b>0</b>/{$group->warning}";
+                            $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                        }
+
                     }
 
                     if(mb_stripos($text,"/setchannel") !== false){
-                        $this->deleteMessage($chat_id, $message_id);
                         $ex = explode(" ", $text);
                         if (count($ex) == 2){
+                            $this->deleteMessage($chat_id, $message_id);
+                            $this->sendChatAction($chat_id);
                             $ex = $ex[1];
                             $check = $this->bot('getChat', ['chat_id' => $ex]);
                             if (!$check->ok){
@@ -266,6 +316,7 @@ class BotController extends Controller
                     if(mb_stripos($text,"/message") !== false) {
                         $ex = explode(" ", $text);
                         if (count($ex) == 2) {
+                            $this->sendChatAction($chat_id);
                             $ex = $ex[1];
                             if ($ex == 'off') {
                                 $this->deleteMessage($chat_id, $message_id);
@@ -289,6 +340,7 @@ class BotController extends Controller
                         if (count($ex) == 2) {
                             $ex = $ex[1];
                             $this->deleteMessage($chat_id, $message_id);
+                            $this->sendChatAction($chat_id);
                             if (is_numeric($ex)){
                                 $this->updateGroup($chat_id, ['add_required_member' => $ex]);
                                 $txt = "*Guruhda yozish uchun majburiy odam qo'shish {$ex} ga o'zgartirildi!*";
@@ -299,10 +351,12 @@ class BotController extends Controller
                         }
                     }
                     if(mb_stripos($text,"/warning") !== false) {
+
                         $ex = explode(" ", $text);
                         if (count($ex) == 2) {
                             $ex = $ex[1];
                             $this->deleteMessage($chat_id, $message_id);
+                            $this->sendChatAction($chat_id);
                             if (is_numeric($ex)){
                                 $this->updateGroup($chat_id, ['warning' => $ex]);
                                 $txt = "*Guruhda guruhda ogohlantirishlar soni {$ex} ga o'zgartirildi!*";
@@ -366,6 +420,13 @@ class BotController extends Controller
         $this->bot('deleteMessage', [
             'chat_id' => $chat_id,
             'message_id' => $message_id,
+        ]);
+    }
+    public function sendChatAction($chat_id, $action = 'typing')
+    {
+        $this->bot('sendChatAction', [
+           'chat_id' => $chat_id,
+           'action' => $action,
         ]);
     }
 
