@@ -155,6 +155,14 @@ class BotController extends Controller
                        'reply_to_message_id' => $message_id,
                     ]);
                 }
+                if ($text == "/mymembers"){
+                    $count = GroupMember::where('group_id', $chat_id)->where('user_id', $from_id)->get()->count();
+                    $txt = "<b>Siz guruhga {$count} ta odam qoshigansiz</b>";
+                    $this->sendMessage($chat_id, $txt, [
+                        'parse_mode' => 'html',
+                        'reply_to_message_id' => $message_id,
+                    ]);
+                }
                 if (isset($message->from) and isset($message->new_chat_participant) and isset($message->new_chat_member) and isset($message->new_chat_members)){
                     $this->deleteMessage($chat_id, $message_id);
                     if (!$message->new_chat_participant->is_bot){
