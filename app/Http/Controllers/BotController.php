@@ -149,6 +149,12 @@ class BotController extends Controller
                        'reply_to_message_id' => $message_id,
                     ]);
                 }
+                if ($text == "/gid"){
+                    $this->sendMessage($chat_id, "*Guruhning id raqami: *`{$chat_id}`", [
+                       'parse_mode' => 'markdown',
+                       'reply_to_message_id' => $message_id,
+                    ]);
+                }
                 if (isset($message->from) and isset($message->new_chat_participant) and isset($message->new_chat_member) and isset($message->new_chat_members)){
                     $this->deleteMessage($chat_id, $message_id);
                     if (!$message->new_chat_participant->is_bot){
