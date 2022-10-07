@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateGroupsTable extends Migration
+class CreateGroupWarningsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,11 @@ class CreateGroupsTable extends Migration
      */
     public function up()
     {
-        Schema::create('groups', function (Blueprint $table) {
+        Schema::create('group_warnings', function (Blueprint $table) {
             $table->id();
             $table->string('group_id');
-            $table->string('channel')->nullable();
-            $table->boolean('send_by_channel')->default(true);
-            $table->string('add_required_member')->default(0);
-            $table->integer('warning')->default(3);
+            $table->string('user_id');
+            $table->integer('amount');
             $table->timestamps();
         });
     }
@@ -31,6 +29,6 @@ class CreateGroupsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('groups');
+        Schema::dropIfExists('group_warnings');
     }
 }

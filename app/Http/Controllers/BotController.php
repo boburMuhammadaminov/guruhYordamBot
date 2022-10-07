@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\GroupWarning;
 use Illuminate\Http\Request;
 use function PHPUnit\Framework\isEmpty;
 use function PHPUnit\Framework\isNull;
@@ -228,6 +229,16 @@ class BotController extends Controller
                             $this->sendMessage($chat_id, "*Guruhga biriktirilgan kanal $channel o'chirildi*", ['parse_mode' => 'markdown']);
                         }
                     }
+                    if (isset($message->reply_to_message)){
+                        $reply_to_message = $message->reply_to_message;
+                        $rfrom = $reply_to_message->from;
+                        $rchat = $reply_to_message->chat;
+                        if ($text == "/warn"){
+                            $count = GroupWarning::where('group_id', $chat_id)->where('user_id', $rfrom->id)->get()->count();
+//                            $this->json($count);
+                        }
+                    }
+
                     if(mb_stripos($text,"/setchannel") !== false){
                         $this->deleteMessage($chat_id, $message_id);
                         $ex = explode(" ", $text);
@@ -281,6 +292,20 @@ class BotController extends Controller
                             if (is_numeric($ex)){
                                 $this->updateGroup($chat_id, ['add_required_member' => $ex]);
                                 $txt = "*Guruhda yozish uchun majburiy odam qo'shish {$ex} ga o'zgartirildi!*";
+                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                            }else{
+                                $this->sendMessage($chat_id, "Raqam yuboring!");
+                            }
+                        }
+                    }
+                    if(mb_stripos($text,"/warning") !== false) {
+                        $ex = explode(" ", $text);
+                        if (count($ex) == 2) {
+                            $ex = $ex[1];
+                            $this->deleteMessage($chat_id, $message_id);
+                            if (is_numeric($ex)){
+                                $this->updateGroup($chat_id, ['warning' => $ex]);
+                                $txt = "*Guruhda guruhda ogohlantirishlar soni {$ex} ga o'zgartirildi!*";
                                 $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
                             }else{
                                 $this->sendMessage($chat_id, "Raqam yuboring!");
