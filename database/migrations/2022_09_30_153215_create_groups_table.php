@@ -20,6 +20,7 @@ class CreateGroupsTable extends Migration
             $table->boolean('send_by_channel')->default(true);
             $table->string('add_required_member')->default(0);
             $table->integer('warning')->default(3);
+            $table->boolean('ads')->default(true);
             $table->timestamps();
         });
     }

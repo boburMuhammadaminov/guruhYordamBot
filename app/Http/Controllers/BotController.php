@@ -130,13 +130,61 @@ class BotController extends Controller
                                 $this->sendChatAction($chat_id);
                                 $count = $n - $count;
                                 $this->deleteMessage($chat_id, $message_id);
-                                $txt = "<b><a href='tg://user?{$from_id}'>{$fname}</a> guruhda yozish uchun {$count}/{$n} ta odam qoshishingiz kerak</b>";
+                                $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> guruhda yozish uchun {$count}/{$n} ta odam qoshishingiz kerak</b>";
                                 $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
                                 exit();
                             }
                         }
                     }
                 }
+                //settings
+                if (!$this->isGroupAdmin($chat_id, $from_id)){
+                    if (!$group->ads){
+                        if (isset($message->text)){
+                            $txt = $text;
+                            if ((mb_stripos($txt,"@")!==false) or (mb_stripos($txt,"http")!==false) or (mb_stripos($txt,".me")!==false) or (mb_stripos($txt,".uz")!==false) or (mb_stripos($txt,".ru")!==false) or (mb_stripos($txt,".com")!==false) or (mb_stripos($txt,".net")!==false)){
+                                $this->deleteMessage($chat_id, $message_id);
+                                $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
+                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                            }
+                            if (isset($message->entities)){
+                                $link = false;
+                                foreach ($message->entities as $entity){
+                                    if ($entity->type == "text_link"){
+                                        $link = true;
+                                    }
+                                }
+                                if ($link){
+                                    $this->deleteMessage($chat_id, $message_id);
+                                    $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                }
+                            }
+                        }
+                        if (isset($message->caption)){
+                            $txt = $message->caption;
+                            if ((mb_stripos($txt,"@")!==false) or (mb_stripos($txt,"http")!==false) or (mb_stripos($txt,".me")!==false) or (mb_stripos($txt,".uz")!==false) or (mb_stripos($txt,".ru")!==false) or (mb_stripos($txt,".com")!==false) or (mb_stripos($txt,".net")!==false)){
+                                $this->deleteMessage($chat_id, $message_id);
+                                $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
+                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                            }
+                            if (isset($message->caption_entities)){
+                                $link = false;
+                                foreach ($message->caption_entities as $entity){
+                                    if ($entity->type == "text_link"){
+                                        $link = true;
+                                    }
+                                }
+                                if ($link){
+                                    $this->deleteMessage($chat_id, $message_id);
+                                    $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if ($text == '/channel'){
                     $this->sendChatAction($chat_id);
                     $channel = Group::where('group_id', $chat_id)->get()->first()->channel;
@@ -214,6 +262,20 @@ class BotController extends Controller
                     }
                 }
                 if($this->isGroupAdmin($chat_id, $from_id)){
+                    if ($text == "/offads"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
+                        $this->updateGroup($chat_id, ['ads' => false]);
+                        $txt = "*Guruhda reklama tashlash taqiqlandi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
+                    if ($text == "/onads"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
+                        $this->updateGroup($chat_id, ['ads' => true]);
+                        $txt = "*Guruhda reklama tashlashga ruxsat berildi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
                     if ($text == "/offchannel"){
                         $this->deleteMessage($chat_id, $message_id);
                         $this->sendChatAction($chat_id);
