@@ -21,6 +21,7 @@ class CreateGroupsTable extends Migration
             $table->string('add_required_member')->default(0);
             $table->integer('warning')->default(3);
             $table->boolean('ads')->default(true);
+            $table->boolean('forward')->default(true);
             $table->timestamps();
         });
     }

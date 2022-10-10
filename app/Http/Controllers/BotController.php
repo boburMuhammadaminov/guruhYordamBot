@@ -189,12 +189,14 @@ class BotController extends Controller
                             }
                         }
                     }
-                    if (isset($message->forward_from_chat)){
-                        $this->deleteMessage($chat_id, $message_id);
-                        $this->sendChatAction($chat_id);
-                        $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda forward qilish mumkin emas.</b>";
-                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
-                        exit();
+                    if (!$group->forward){
+                        if (isset($message->forward_from_chat)){
+                            $this->deleteMessage($chat_id, $message_id);
+                            $this->sendChatAction($chat_id);
+                            $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda forward qilish mumkin emas.</b>";
+                            $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                            exit();
+                        }
                     }
                 }
 
@@ -287,6 +289,20 @@ class BotController extends Controller
                         $this->sendChatAction($chat_id);
                         $this->updateGroup($chat_id, ['ads' => true]);
                         $txt = "*Guruhda reklama tashlashga ruxsat berildi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
+                    if ($text == "/offforward"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
+                        $this->updateGroup($chat_id, ['forward' => false]);
+                        $txt = "*Guruhda forward qilish taqiqlandi!*";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
+                    }
+                    if ($text == "/onforward"){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
+                        $this->updateGroup($chat_id, ['forward' => true]);
+                        $txt = "*Guruhda forward qilishga ruxsat berildi!*";
                         $this->sendMessage($chat_id, $txt, ['parse_mode' => 'markdown']);
                     }
                     if ($text == "/offchannel"){
