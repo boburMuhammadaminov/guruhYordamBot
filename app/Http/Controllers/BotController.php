@@ -239,6 +239,9 @@ class BotController extends Controller
                     $this->deleteMessage($chat_id, $message_id);
                     if (!$message->new_chat_participant->is_bot){
                         $this->sendChatAction($chat_id);
+                        $txt = "Assalomu alaykum <a href='tg://user?id={$message->new_chat_participant->id}'>{$message->new_chat_participant->first_name}</a> guruhimizga xush kelibsiz.";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+
                         $check = GroupMember::where('group_id', $chat_id)->where('added_user', $message->new_chat_participant->id)->first();
                         if (!$check){
                             $check = GroupMember::create([
@@ -246,13 +249,15 @@ class BotController extends Controller
                                 'user_id' => $from_id,
                                 'added_user' => $message->new_chat_participant->id,
                             ]);
-                            $count = GroupMember::where('group_id', $chat_id)->where('user_id', $from_id)->get()->count();
-                            if ($count != $n){
-                                $txt = "<b> <a href='tg://user?id={$from_id}'>{$fname}</a> guruhga a'zo qoshdingiz. Yana {$count}/{$n} ta odam qoshishingiz kerak</b>";
-                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
-                            }else{
-                                $txt = "<b> <a href='tg://user?id={$from_id}'>{$fname}</a> guruhga {$n} ta odam qoshitingiz, endi guruhda yozishingiz mumkin</b>";
-                                $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                            if (n > 0){
+                                $count = GroupMember::where('group_id', $chat_id)->where('user_id', $from_id)->get()->count();
+                                if ($count != $n){
+                                    $txt = "<b> <a href='tg://user?id={$from_id}'>{$fname}</a> guruhga a'zo qoshdingiz. Yana {$count}/{$n} ta odam qoshishingiz kerak</b>";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                }else{
+                                    $txt = "<b> <a href='tg://user?id={$from_id}'>{$fname}</a> guruhga {$n} ta odam qoshitingiz, endi guruhda yozishingiz mumkin</b>";
+                                    $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                }
                             }
                         }
                     }
@@ -333,6 +338,17 @@ class BotController extends Controller
                             $this->sendMessage($chat_id, "*Guruhga biriktirilgan kanal $channel o'chirildi*", ['parse_mode' => 'markdown']);
                         }
                     }
+                    if ($text == "/msg"){
+                        $result = $this->bot('getChatMembersCount', ['chat_id' => $chat_id]);
+                        $count = $result->result;
+                        $mid = round($message_id/$count);
+                        $txt = "<b>{$chat_title}</b> guruhida hammasi bo'lib <b>{$message_id}</b>ta xabar yozilgan\n💁‍♂️Shunda <b>{$count}</b>ta odam o'rtacha <b>{$mid}</b>tadan xabar yozishgan!";
+                        $this->sendMessage($chat_id, $txt, [
+                            'parse_mode' => 'html',
+                            'reply_to_message_id' => $message_id,
+                        ]);
+
+                    }
                     if (isset($message->reply_to_message)){
                         $reply_to_message = $message->reply_to_message;
                         $rfrom = $reply_to_message->from;
@@ -375,6 +391,12 @@ class BotController extends Controller
                             }
                             $txt = "<a href='tg://user?id={$rfrom->id}'>{$rfrom->first_name}</a> dan barcha <b>ogohlantirishlar</b> olib tashlandi.\nEndi undagi ogohlantirishlar soni <b>0</b>/{$group->warning}";
                             $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                        }
+                        if ($text == "/pin"){
+                            $this->bot('pinChatMessage', [
+                                'chat_id' => $chat_id,
+                                'message_id' => $reply_to_message->message_id,
+                            ]);
                         }
 
                     }
