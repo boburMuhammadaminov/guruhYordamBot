@@ -51,6 +51,8 @@ class BotController extends Controller
                     }
                 }else{
                     Group::where('group_id', $chat_id)->get()->first()->delete();
+                    GroupWarning::where('group_id', $chat_id)->get()->delete();
+                    GroupMember::where('group_id', $chat_id)->get()->delete();
                     $this->sendMessage($from->id, "Siz botni {$chat_title} guruhida adminlikdan chiqardingiz va guruh ma'lumotlar bazasidan o'chirildi!");
                 }
             }
@@ -146,6 +148,7 @@ class BotController extends Controller
                                 $this->deleteMessage($chat_id, $message_id);
                                 $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
                                 $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                exit();
                             }
                             if (isset($message->entities)){
                                 $link = false;
@@ -158,6 +161,7 @@ class BotController extends Controller
                                     $this->deleteMessage($chat_id, $message_id);
                                     $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
                                     $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                    exit();
                                 }
                             }
                         }
@@ -167,6 +171,7 @@ class BotController extends Controller
                                 $this->deleteMessage($chat_id, $message_id);
                                 $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
                                 $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                exit();
                             }
                             if (isset($message->caption_entities)){
                                 $link = false;
@@ -179,9 +184,17 @@ class BotController extends Controller
                                     $this->deleteMessage($chat_id, $message_id);
                                     $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda reklama tashlash mumkin emas</b>";
                                     $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                                    exit();
                                 }
                             }
                         }
+                    }
+                    if (isset($message->forward_from_chat)){
+                        $this->deleteMessage($chat_id, $message_id);
+                        $this->sendChatAction($chat_id);
+                        $txt = "<b><a href='tg://user?id={$from_id}'>{$fname}</a> kechirasiz bu guruhda forward qilish mumkin emas.</b>";
+                        $this->sendMessage($chat_id, $txt, ['parse_mode' => 'html']);
+                        exit();
                     }
                 }
 
